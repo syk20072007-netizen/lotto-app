@@ -4,6 +4,7 @@
 """
 
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import numpy as np
 from collections import Counter
@@ -16,7 +17,7 @@ st.set_page_config(
     page_title="떼교수님의 행운 교실",
     page_icon="🎓",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # ══════════════════════════════════════════════════════════
@@ -425,6 +426,92 @@ def main():
 
     analyzer = LottoAnalyzer(df)
 
+    # ── 스플래시 스크린 (최초 1회만) ──
+    if "splash_done" not in st.session_state:
+        st.markdown("""
+        <style>
+        body, .stApp { overflow: hidden !important; }
+        #splash {
+            position:fixed; top:0; left:0; width:100vw; height:100vh;
+            background:#142314;
+            z-index:99999;
+            display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+            animation: splashFade 0.5s ease 3.0s forwards;
+        }
+        @keyframes splashFade {
+            to { opacity:0; pointer-events:none; }
+        }
+        /* 분필 텍스처 느낌 — 살짝 거친 외곽 */
+        .splash-title {
+            font-size: clamp(32px, 9vw, 58px);
+            font-weight: 900;
+            color: transparent;
+            background: linear-gradient(180deg, #c8f0c8 0%, #7bc87b 60%, #4fa84f 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            letter-spacing: 3px;
+            filter: drop-shadow(0 0 18px rgba(163,224,163,0.45));
+            /* 분필 쓰기: 글자가 왼→오른쪽으로 나타남 */
+            overflow: hidden;
+            white-space: nowrap;
+            border-right: 3px solid #a3e0a3;
+            width: 0;
+            animation:
+                chalkWrite 1.1s steps(12, end) 0.3s forwards,
+                cursorBlink 0.55s step-end 1.4s 3,
+                cursorHide 0s 3.0s forwards;
+        }
+        @keyframes chalkWrite {
+            from { width: 0; }
+            to   { width: 13ch; }
+        }
+        @keyframes cursorBlink {
+            50% { border-color: transparent; }
+        }
+        @keyframes cursorHide {
+            to { border-color: transparent; }
+        }
+        .chalk-underline {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #a3e0a3 30%, #a3e0a3 70%, transparent);
+            width: 0;
+            animation: lineGrow 0.7s ease 1.5s forwards;
+        }
+        @keyframes lineGrow {
+            to { width: clamp(180px, 50vw, 320px); }
+        }
+        .splash-sub {
+            font-size: clamp(15px, 4.5vw, 24px);
+            color: #7a9a7a;
+            margin-top: 14px;
+            opacity: 0;
+            animation: fadeUp 0.6s ease 2.0s forwards;
+        }
+        .splash-desc {
+            font-size: clamp(11px, 3vw, 15px);
+            color: #4d6e4d;
+            margin-top: 8px;
+            opacity: 0;
+            animation: fadeUp 0.6s ease 2.4s forwards;
+        }
+        @keyframes fadeUp {
+            from { opacity:0; transform: translateY(8px); }
+            to   { opacity:1; transform: translateY(0); }
+        }
+        </style>
+        <div id="splash">
+            <div class="splash-title">떼랩 Tte-Lab</div>
+            <div class="chalk-underline"></div>
+            <div class="splash-sub">🎓 떼교수님의 로또 연구소</div>
+            <div class="splash-desc">데이터로 찾는 오늘의 행운</div>
+        </div>
+        """, unsafe_allow_html=True)
+        import time
+        time.sleep(3.2)
+        st.session_state["splash_done"] = True
+        st.rerun()
+
     # ── 사이드바 ──
     with st.sidebar:
         st.markdown("""
@@ -443,6 +530,33 @@ def main():
             "📝 과거 당첨 데이터 연구",
             "📈 최신 당첨 추세 전망",
         ], label_visibility="collapsed")
+
+        # 메뉴 선택 시 사이드바 자동 닫기
+        if st.session_state.get("prev_menu") != menu:
+            if st.session_state.get("prev_menu") is not None:
+                components.html("""
+                <script>
+                (function() {
+                    try {
+                        const btns = window.parent.document.querySelectorAll('button');
+                        for (const btn of btns) {
+                            const label = btn.getAttribute('aria-label') || '';
+                            if (label.includes('Close') || label.includes('sidebar') ||
+                                label.includes('collapse') || label.includes('Collapse')) {
+                                btn.click(); return;
+                            }
+                        }
+                        const toggle = window.parent.document.querySelector(
+                            '[data-testid="collapsedControl"],' +
+                            '[data-testid="baseButton-headerNoPadding"],' +
+                            'section[data-testid="stSidebar"] button'
+                        );
+                        if (toggle) toggle.click();
+                    } catch(e) {}
+                })();
+                </script>
+                """, height=0, scrolling=False)
+            st.session_state["prev_menu"] = menu
 
         st.markdown("---")
         last_r = int(df['회차'].max())
@@ -553,17 +667,17 @@ def main():
             fig = px.bar(freq_df, x="번호", y="출현횟수",
                          color="출현횟수",
                          color_continuous_scale=["#0d2b0d", "#2e7d32", "#00e676"],
-                         title="번호별 전체 출현 횟수 (진할수록 많이 나온 번호)")
+                         title="번호별 전체 출현 횟수")
             fig.update_layout(
                 template="plotly_dark",
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0.2)",
                 font=dict(color="#d4e8c2"),
                 title=dict(
-                    text="번호별 전체 출현 횟수 (진할수록 많이 나온 번호)",
+                    text="번호별 전체 출현 횟수",
                     font=dict(color="#a3e0a3", size=15)
                 ),
-                xaxis=dict(dtick=1, gridcolor="rgba(255,255,255,0.05)"),
+                xaxis=dict(dtick=5, gridcolor="rgba(255,255,255,0.05)"),
                 yaxis=dict(
                     gridcolor="rgba(255,255,255,0.05)",
                     title=""
@@ -579,7 +693,8 @@ def main():
             )
             fig.add_hline(y=avg, line_dash="dot", line_color="#ffe066",
                           annotation_text=f"평균 {avg:.0f}회", annotation_font_color="#ffe066")
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True,
+                            config={"displayModeBar": False, "staticPlot": False})
 
             top3 = freq_df.nlargest(3, "출현횟수")
             bot3 = freq_df.nsmallest(3, "출현횟수")
@@ -813,10 +928,10 @@ def main():
         st.markdown("""
         <div class="bubble">
         역대 당첨 번호들의 패턴을 분석해봤어요.
-        어떤 합계 범위가 많은지, 홀짝 비율은 어떤지, 번호 히트맵까지 확인해보세요!
+        어떤 합계 범위가 많은지, 홀짝 비율은 어떤지 한눈에 확인해보세요!
         </div>""", unsafe_allow_html=True)
 
-        tab1, tab2, tab3 = st.tabs(["🔢 합계 분포", "홀짝 비율", "🗓 번호 히트맵"])
+        tab1, tab2 = st.tabs(["🔢 합계 분포", "홀짝 비율"])
 
         with tab1:
             sums = analyzer.get_sum_distribution()
@@ -868,7 +983,8 @@ def main():
                 font=dict(color="#d4e8c2", size=12),
                 textangle=0, xanchor="center", yanchor="bottom"
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True,
+                            config={"displayModeBar": False, "staticPlot": False})
 
         with tab2:
             odd_even = analyzer.get_odd_even_distribution()
@@ -897,34 +1013,6 @@ def main():
                     </div>
                 </div>""", unsafe_allow_html=True)
 
-        with tab3:
-            st.markdown("""
-            <div class="lecture-note">
-            📝 최근 50회 동안 각 번호가 언제 나왔는지 한눈에 볼 수 있어요.
-            녹색 칸이 당첨된 회차예요. 세로로 줄이 많을수록 자주 나온 번호!
-            </div>""", unsafe_allow_html=True)
-
-            recent_df = df.tail(50)
-            heatmap_data = []
-            for _, row in recent_df.iterrows():
-                r = [0]*45
-                for num in row["번호목록"]: r[num-1] = 1
-                heatmap_data.append(r)
-
-            hm_df = pd.DataFrame(heatmap_data,
-                                  index=[f"{int(r)}회" for r in recent_df["회차"]],
-                                  columns=[str(i) for i in range(1,46)])
-
-            fig3 = px.imshow(hm_df,
-                             color_continuous_scale=["#1a2e1a", "#a3e0a3"],
-                             aspect="auto",
-                             title="최근 50회 번호 히트맵 (초록 = 당첨번호)")
-            fig3.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)", font=dict(color="#d4e8c2"),
-                height=560, margin=dict(t=40,b=10),
-                coloraxis_showscale=False
-            )
-            st.plotly_chart(fig3, use_container_width=True)
 
 
 if __name__ == "__main__":
