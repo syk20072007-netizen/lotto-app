@@ -512,6 +512,30 @@ def main():
         st.session_state["splash_done"] = True
         st.rerun()
 
+    # ── 항상 사이드바 닫힘으로 시작 (매 세션 최초 1회) ──
+    if "sidebar_init_done" not in st.session_state:
+        st.session_state["sidebar_init_done"] = True
+        import random as _random
+        _init_key = _random.randint(100000, 999999)
+        components.html(f"""
+        <script>
+        // init_close_{_init_key}
+        setTimeout(function() {{
+            try {{
+                var sel = [
+                    'section[data-testid="stSidebar"] button[data-testid="baseButton-headerNoPadding"]',
+                    'section[data-testid="stSidebar"] button',
+                    '[data-testid="stSidebarCollapseButton"]'
+                ];
+                for (var s of sel) {{
+                    var el = window.parent.document.querySelector(s);
+                    if (el) {{ el.click(); return; }}
+                }}
+            }} catch(e) {{}}
+        }}, 400);
+        </script>
+        """, height=0, scrolling=False)
+
     # ── 사이드바 ──
     with st.sidebar:
         st.markdown("""
@@ -531,32 +555,29 @@ def main():
             "📈 최신 당첨 추세 전망",
         ], label_visibility="collapsed")
 
-        # 메뉴 선택 시 사이드바 자동 닫기
+        # 메뉴 선택할 때마다 사이드바 자동 닫기 (카운터로 매번 새 실행 보장)
         if st.session_state.get("prev_menu") != menu:
-            if st.session_state.get("prev_menu") is not None:
-                components.html("""
-                <script>
-                (function() {
-                    try {
-                        const btns = window.parent.document.querySelectorAll('button');
-                        for (const btn of btns) {
-                            const label = btn.getAttribute('aria-label') || '';
-                            if (label.includes('Close') || label.includes('sidebar') ||
-                                label.includes('collapse') || label.includes('Collapse')) {
-                                btn.click(); return;
-                            }
-                        }
-                        const toggle = window.parent.document.querySelector(
-                            '[data-testid="collapsedControl"],' +
-                            '[data-testid="baseButton-headerNoPadding"],' +
-                            'section[data-testid="stSidebar"] button'
-                        );
-                        if (toggle) toggle.click();
-                    } catch(e) {}
-                })();
-                </script>
-                """, height=0, scrolling=False)
             st.session_state["prev_menu"] = menu
+            _cnt = st.session_state.get("collapse_cnt", 0) + 1
+            st.session_state["collapse_cnt"] = _cnt
+            components.html(f"""
+            <script>
+            // collapse_{_cnt}
+            setTimeout(function() {{
+                try {{
+                    var sel = [
+                        'section[data-testid="stSidebar"] button[data-testid="baseButton-headerNoPadding"]',
+                        'section[data-testid="stSidebar"] button',
+                        '[data-testid="stSidebarCollapseButton"]'
+                    ];
+                    for (var s of sel) {{
+                        var el = window.parent.document.querySelector(s);
+                        if (el) {{ el.click(); return; }}
+                    }}
+                }} catch(e) {{}}
+            }}, 150);
+            </script>
+            """, height=0, scrolling=False)
 
         st.markdown("---")
         last_r = int(df['회차'].max())
