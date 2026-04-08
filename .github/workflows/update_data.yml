@@ -1,18 +1,18 @@
 name: Update Lotto Data
 on:
   workflow_dispatch:
-    schedule:
-        - cron: '0 15 * * 6'
-        jobs:
-          update:
-              runs-on: ubuntu-latest
-                  steps:
-                        - uses: actions/checkout@v3
-                              - uses: actions/setup-python@v4
-                                      with:
-                                                python-version: '3.11'
-                                                      - run: pip install requests pandas
-                                                            - run: python update_lotto.py
-                                                                  - uses: stefanzweifel/git-auto-commit-action@v4
-                                                                          with:
-                                                                                    commit_message: 'Auto update lotto data'
+  schedule:
+    - cron: '0 15 * * 6'
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: pip install requests pandas
+      - run: python update_lotto.py
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: 'Auto update lotto data'
