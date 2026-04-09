@@ -1,12 +1,17 @@
 name: Fix 1218
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 jobs:
   fix:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: echo "1218,3,28,31,32,42,45,25,1714482042,18" >> lotto_data.csv
+      - run: |
+          if ! grep -q "^1218," lotto_data.csv; then
+            echo "1218,3,28,31,32,42,45,25,1714482042,18" >> lotto_data.csv
+          fi
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: 'Add 1218 data'
