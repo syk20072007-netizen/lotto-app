@@ -1,0 +1,32 @@
+name: Fix lotto data 1219-1225
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Append missing rounds 1219-1225
+        run: |
+          if grep -q "^1225," lotto_data.csv; then
+            echo "1225 skip"
+            exit 0
+          fi
+          echo "1219,1,2,15,28,39,45,31,2508230000,12" >> lotto_data.csv
+          echo "1220,2,22,25,28,34,43,16,2114514161,14" >> lotto_data.csv
+          echo "1221,6,13,18,28,30,36,9,1830801165,16" >> lotto_data.csv
+          echo "1222,4,11,17,22,32,41,34,1202986844,24" >> lotto_data.csv
+          echo "1223,16,18,20,32,33,39,26,1857554133,16" >> lotto_data.csv
+          echo "1224,9,18,21,27,44,45,28,2414855250,12" >> lotto_data.csv
+          echo "1225,8,9,19,25,41,42,33,2228130000,13" >> lotto_data.csv
+          tail -8 lotto_data.csv
+
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: 'Fix: add lotto rounds 1219-1225'
